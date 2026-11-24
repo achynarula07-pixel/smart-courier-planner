@@ -1,0 +1,121 @@
+======================================================================
+PHASE 1 - PROBLEM SETUP
+======================================================================
+Van capacity: 25 kg | Depot: Depot | Parcels: 10 | Graph: 8 nodes, 12 roads
+
+Adjacency list:
+  0 Depot        -> Rajiv Chowk(4km), Sector 17(7km), Airport Rd(15km)
+  1 Rajiv Chowk  -> Depot(4km), Sector 17(3km), Model Town(6km)
+  2 Sector 17    -> Depot(7km), Rajiv Chowk(3km), Green Park(5km)
+  3 Model Town   -> Rajiv Chowk(6km), Green Park(2km), Civil Lines(8km)
+  4 Green Park   -> Sector 17(5km), Model Town(2km), Mall Road(4km)
+  5 Civil Lines  -> Model Town(8km), Mall Road(3km), Airport Rd(9km)
+  6 Mall Road    -> Green Park(4km), Civil Lines(3km), Airport Rd(6km)
+  7 Airport Rd   -> Civil Lines(9km), Mall Road(6km), Depot(15km)
+
+Input parcels (unsorted):
+  ID   Dest          kg Pri DL(h) Value
+  P01  Model Town     5   3     6    48
+  P02  Rajiv Chowk    3   5     2    72
+  P03  Mall Road      8   2    10    34
+  P04  Civil Lines    4   4     5    59
+  P05  Airport Rd     7   1    20    14
+  P06  Green Park     6   5     3    71
+  P07  Sector 17      2   3     8    46
+  P08  Mall Road      9   4    12    52
+  P09  Rajiv Chowk    5   2    15    29
+  P10  Civil Lines    3   3     6    48
+
+======================================================================
+PHASE 2 - SORTING + KNAPSACK DP
+======================================================================
+Parcels after Merge Sort (deadline asc, priority desc):
+  P02 deadline= 2h priority=5 weight=3kg value=72
+  P06 deadline= 3h priority=5 weight=6kg value=71
+  P04 deadline= 5h priority=4 weight=4kg value=59
+  P01 deadline= 6h priority=3 weight=5kg value=48
+  P10 deadline= 6h priority=3 weight=3kg value=48
+  P07 deadline= 8h priority=3 weight=2kg value=46
+  P03 deadline=10h priority=2 weight=8kg value=34
+  P08 deadline=12h priority=4 weight=9kg value=52
+  P09 deadline=15h priority=2 weight=5kg value=29
+  P05 deadline=20h priority=1 weight=7kg value=14
+
+DP table dp[i][w] (rows = parcels in sorted order, columns = capacity 0..25):
+         0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25
+none     0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
+P02      0   0   0  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72  72
+P06      0   0   0  72  72  72  72  72  72 143 143 143 143 143 143 143 143 143 143 143 143 143 143 143 143 143
+P04      0   0   0  72  72  72  72 131 131 143 143 143 143 202 202 202 202 202 202 202 202 202 202 202 202 202
+P01      0   0   0  72  72  72  72 131 131 143 143 143 179 202 202 202 202 202 250 250 250 250 250 250 250 250
+P10      0   0   0  72  72  72 120 131 131 143 179 179 191 202 202 227 250 250 250 250 250 298 298 298 298 298
+P07      0   0  46  72  72 118 120 131 166 177 179 189 225 225 237 248 250 273 296 296 296 298 298 344 344 344
+P03      0   0  46  72  72 118 120 131 166 177 179 189 225 225 237 248 250 273 296 296 296 298 298 344 344 344
+P08      0   0  46  72  72 118 120 131 166 177 179 189 225 225 237 248 250 273 296 296 296 298 298 344 344 344
+P09      0   0  46  72  72 118 120 131 166 177 179 189 225 225 237 248 250 273 296 296 296 298 302 344 344 344
+P05      0   0  46  72  72 118 120 131 166 177 179 189 225 225 237 248 250 273 296 296 296 298 302 344 344 344
+
+Best total value = 344   Load = 23/25 kg
+Selected parcels: P02, P06, P04, P01, P10, P07
+Left for next trip: P03, P08, P09, P05
+Greedy (value/weight) heuristic value = 344 (same as DP here)
+
+======================================================================
+PHASE 3 - DIJKSTRA + NEAREST-NEIGHBOUR TSP
+======================================================================
+Delivery stops: Rajiv Chowk, Sector 17, Model Town, Green Park, Civil Lines
+
+Dijkstra shortest paths from the Depot:
+  Depot -> Rajiv Chowk    4 km  via Depot > Rajiv Chowk
+  Depot -> Sector 17      7 km  via Depot > Sector 17
+  Depot -> Model Town    10 km  via Depot > Rajiv Chowk > Model Town
+  Depot -> Green Park    12 km  via Depot > Sector 17 > Green Park
+  Depot -> Civil Lines   18 km  via Depot > Rajiv Chowk > Model Town > Civil Lines
+
+Nearest-neighbour route (stop order):
+  Depot -> Rajiv Chowk -> Sector 17 -> Green Park -> Model Town -> Civil Lines -> Depot
+    Depot        -> Rajiv Chowk    4 km  (cumulative 4 km)
+    Rajiv Chowk  -> Sector 17      3 km  (cumulative 7 km)
+    Sector 17    -> Green Park     5 km  (cumulative 12 km)
+    Green Park   -> Model Town     2 km  (cumulative 14 km)
+    Model Town   -> Civil Lines    8 km  (cumulative 22 km)
+    Civil Lines  -> Depot         18 km  (cumulative 40 km)
+Actual road path: Depot > Rajiv Chowk > Sector 17 > Green Park > Model Town > Civil Lines > Model Town > Rajiv Chowk > Depot
+TOTAL ROUTE LENGTH = 40 km
+Optimal (brute force) = 37 km | Approximation ratio = 1.081
+
+Delivery manifest (parcels grouped in route order):
+  Rajiv Chowk : P02
+  Sector 17   : P07
+  Green Park  : P06
+  Model Town  : P01
+  Civil Lines : P04, P10
+
+======================================================================
+PHASE 4a - CORRECTNESS EVIDENCE
+======================================================================
+[PASS] merge sort and quick sort match Python's sorted() on n = 10, 100, 1000
+[PASS] knapsack DP equals brute-force optimum on 5 random 12-parcel cases
+[PASS] Dijkstra equals Floyd-Warshall for every source on the demo graph
+[PASS] NN tour vs optimal on 10 random graphs (7 stops): avg ratio 1.053, worst 1.198
+
+======================================================================
+PHASE 4b - RUNTIME TESTS (milliseconds)
+======================================================================
+    n nodes   cap stops    merge    quick      knap      dijk       NN     km
+-----------------------------------------------------------------------------
+   10    15    13     2     0.01     0.03      0.01      0.02     0.00     49
+   50    35   108    16     0.04     0.06      0.50      0.29     0.01    184
+  100    60   210    30     0.10     0.13      1.97      1.02     0.03    252
+  250   135   515    75     0.28     0.36     13.55      5.92     0.16    661
+  500   260  1024   153     0.66     0.64     55.64     24.96     0.63   1380
+ 1000   510  2056   291     1.36     1.24    224.63    107.63     2.18   2531
+Saved results/runtimes.csv
+Saved results/runtime_chart.png
+
+Optimization notes:
+ - Knapsack DP is the bottleneck (O(n*capacity)); use a 1-D table if only the value
+   is needed, or scale weights / use branch-and-bound for very large vans.
+ - Dijkstra is re-run for every stop; cache results or use A* / multi-source tricks.
+ - NN tour can be improved with 2-opt local search (usually 5-15% shorter).
+ - Sorting cost is negligible next to DP/graph steps; merge sort is kept for stability.
